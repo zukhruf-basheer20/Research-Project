@@ -1,0 +1,5 @@
+data
+data/filtered
+data/raw
+data/train
+data/val

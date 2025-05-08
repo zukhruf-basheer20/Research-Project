@@ -1,41 +1,31 @@
-# File Tracker
-
-## Dataset Tracking
-
-### ✅ Raw Dataset (from GBIF)
-- Folder: `data/raw/`
-- Downloaded on: 2025-05-02
-- Method: GBIF API
-- Species: Quercus (oak) — Taxon Key: 2540970
-- Images Downloaded: 50 (initial test batch)
-
-### ⏳ Filtered Dataset
-- Folder: `data/filtered/`
-- Status: To be created
-- Method: Binary classification using pre-trained model (ResNet50 or EfficientNetB0)
-
----
-
-## Notes
-- Expand download count after testing import + filter steps.
-- Will separate into `leaf/` and `non_leaf/` if needed for training a classifier.
-- Keep track of any corrupted/missing images during download phase.
-
-code/
+### 📁 Project Structure or Folder Structure
+```sh
+Code/
 │
 ├── data/
-│   ├── raw/              # GBIF downloaded images go here
-│   ├── filtered/         # Images confirmed to contain leaves
+│   ├── raw/                                    # GBIF downloaded images go here
+│   ├── filtered/                               # Images confirmed to contain leaves
+│   ├── train/
+│   │   ├── Heracleum_mantegazzianum/
+│   │   ├── Heracleum_persicum/
+│   │   ├── Heracleum_sosnowskyi/
+│   ├── val/
+│   │   ├── Heracleum_mantegazzianum/
+│   │   ├── Heracleum_persicum/
+│   │   ├── Heracleum_sosnowskyi/
 │
-├── notebooks/
-│   └── 01_data_import.ipynb  # Your image import + GBIF download logic
 ├── python notebooks/
-│   └── download_gbif_images.py
+│   ├── check_images.py                         # Sanity check for image integrity
+│   ├── download_gbif_images_singular.py        # Script to download images from GBIF any one plant type
+│   ├── download_gbif_images.py                 # Script to download images from GBIF
+│   ├── filter_leaf_images.py                   # Filters images that actually contain leaves
+│   ├── split_dataset.py                        # Train/val split
+│   ├── train_model.py                          # Model training script
 │
-├── models/               # To store trained classifiers or segmentation models
+├── models/                                     # To store trained classifiers or segmentation models
 │
-├── results/              # Visual outputs like Grad-CAM, PCA
+├── results/                                    # Visual outputs like Grad-CAM, PCA
 │
-├── README.md             # Overview of the project
-├── file_tracker.md       # Track of what’s imported, filtered, etc.
-├── requirements.txt      # Python dependencies
+├── README.md                                   # Overview of the project (you're reading it!)
+├── requirements.txt                            # Python dependencies
+```
