@@ -29,6 +29,8 @@ code/
 │
 ├── notebooks/
 │   └── 01_data_import.ipynb  # Your image import + GBIF download logic
+├── python notebooks/
+│   └── download_gbif_images.py
 │
 ├── models/               # To store trained classifiers or segmentation models
 │
