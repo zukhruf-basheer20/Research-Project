@@ -1,9 +1,0 @@
-Paper 1 Github code link: https://github.com/atudell/Color-Cluster-Kit
-
-Paper 2 Github code link: https://github.com/bencarter125/FlowerColor
-
-Paper 3 Github code link: https://github.com/cvat-ai/cvat
-
-Paper 4 Github code link: https://github.com/tmux/tmux/wiki
-
-Paper 5 Github code link: https://github.com/naziz4/DeepPhenology
