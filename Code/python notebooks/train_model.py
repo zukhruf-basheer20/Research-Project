@@ -7,6 +7,8 @@ from tensorflow.keras import layers, models
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 from PIL import UnidentifiedImageError
+import seaborn as sns
+import math
 
 # === ✅ Safe ImageDataGenerator ===
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -44,6 +46,8 @@ VAL_DIR = DATA_DIR / "val"
 MODEL_DIR = ROOT_DIR / "models"
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_SAVE_PATH = MODEL_DIR / "heracleum_classifier.h5"
+RESULTS_DIR = ROOT_DIR / "results"
+RESULTS_DIR.mkdir(exist_ok=True)
 
 # 🖨️ Path Check
 print(f"📁 Looking for train data in: {TRAIN_DIR}")
@@ -104,34 +108,45 @@ history = model.fit(
 model.save(str(MODEL_SAVE_PATH))
 print(f"✅ Model saved to {MODEL_SAVE_PATH}")
 
-# === 📊 Evaluate ===
-val_preds = model.predict(val_data)
+# === 📊 Evaluate + Visualize ===
+val_steps = math.ceil(val_data.samples / val_data.batch_size)
+val_preds = model.predict(val_data, steps=val_steps)
 y_true = val_data.classes
 y_pred = np.argmax(val_preds, axis=1)
 
-print("📊 Classification Report:")
-print(classification_report(y_true, y_pred, target_names=val_data.class_indices.keys()))
+min_len = min(len(y_true), len(y_pred))
+y_true = y_true[:min_len]
+y_pred = y_pred[:min_len]
 
-print("🧾 Confusion Matrix:")
-print(confusion_matrix(y_true, y_pred))
+target_names = list(val_data.class_indices.keys())
+report = classification_report(y_true, y_pred, target_names=target_names, output_dict=True)
+conf_matrix = confusion_matrix(y_true, y_pred)
 
-# === 📈 Plot Training Curves ===
-plt.figure(figsize=(10, 4))
-plt.subplot(1, 2, 1)
-plt.plot(history.history['accuracy'], label='Train Acc')
-plt.plot(history.history['val_accuracy'], label='Val Acc')
-plt.title('Accuracy')
-plt.legend()
-
-plt.subplot(1, 2, 2)
-plt.plot(history.history['loss'], label='Train Loss')
-plt.plot(history.history['val_loss'], label='Val Loss')
-plt.title('Loss')
-plt.legend()
-
-RESULTS_DIR = ROOT_DIR / "results"
-RESULTS_DIR.mkdir(exist_ok=True)
-plot_path = RESULTS_DIR / "training_plot.png"
-plt.savefig(plot_path)
+# === 📈 Confusion Matrix
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues',
+            xticklabels=target_names, yticklabels=target_names)
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.title('Confusion Matrix')
+plt.tight_layout()
+plt.savefig(RESULTS_DIR / "confusion_matrix.png")
 plt.show()
-print(f"📊 Training curves saved to {plot_path}")
+
+# === 📊 Precision / Recall / F1 Plot
+metrics = ['precision', 'recall', 'f1-score']
+plt.figure(figsize=(10, 6))
+
+for metric in metrics:
+    scores = [report[cls][metric] for cls in target_names]
+    plt.plot(target_names, scores, marker='o', label=metric)
+
+plt.ylim(0, 1.05)
+plt.title("Classification Metrics per Class")
+plt.xlabel("Class")
+plt.ylabel("Score")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig(RESULTS_DIR / "metrics_per_class.png")
+plt.show()
