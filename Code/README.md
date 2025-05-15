@@ -23,6 +23,7 @@ Code/
 │   ├── train_model.py                          # Model training script
 │
 ├── models/                                     # To store trained classifiers or segmentation models
+│   ├── heracleum_classifier_best.keras
 │
 ├── results/                                    # Visual outputs like Grad-CAM, PCA
 │

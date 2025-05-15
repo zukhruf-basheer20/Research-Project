@@ -5,7 +5,7 @@ import random
 from pathlib import Path
 
 # Config
-RAW_DIR = "../data/raw"
+RAW_DIR = "../data/raw1"
 OUTPUT_DIR = "../data"
 TRAIN_DIR = os.path.join(OUTPUT_DIR, "train")
 VAL_DIR = os.path.join(OUTPUT_DIR, "val")

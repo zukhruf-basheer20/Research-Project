@@ -39,8 +39,8 @@ class SafeImageDataGenerator(ImageDataGenerator):
 # === 🔧 Paths ===
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
-VAL_DIR = DATA_DIR / "val"
-MODEL_PATH = ROOT_DIR / "models" / "heracleum_classifier.h5"
+VAL_DIR = DATA_DIR / "train"
+MODEL_PATH = ROOT_DIR / "models" / "heracleum_classifier_best.keras"
 
 # === 📦 Load Model ===
 print(f"📦 Loading model from: {MODEL_PATH}")
@@ -101,7 +101,7 @@ plt.xlabel('Predicted Label')
 plt.ylabel('True Label')
 plt.title('Confusion Matrix')
 plt.tight_layout()
-plt.savefig(ROOT_DIR / "results" / "confusion_matrix.png")
+plt.savefig(ROOT_DIR / "results" / "heracleum_classifier_best'keras'_confusionMatrix.png")
 plt.show()
 
 # === 📊 Plot Precision, Recall, F1-score
@@ -119,5 +119,5 @@ plt.ylabel("Score")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(ROOT_DIR / "results" / "metrics_per_class.png")
+plt.savefig(ROOT_DIR / "results" / "heracleum_classifier_best'keras'_metricsPerClass.png")
 plt.show()

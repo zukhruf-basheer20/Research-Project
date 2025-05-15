@@ -1,5 +1,5 @@
 # This script is used to train over the imagenet model weigths with 10 Epox after trainng this it has generated model which has given me about 32000 images.
-# This script has generated model named as heracleum_classifier.h5 unde models dir.
+# This script has generated model named as heracleum_classifier_V1.h5 unde models dir.
 import os
 from pathlib import Path
 import numpy as np
@@ -47,7 +47,7 @@ TRAIN_DIR = DATA_DIR / "train"
 VAL_DIR = DATA_DIR / "val"
 MODEL_DIR = ROOT_DIR / "models"
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
-MODEL_SAVE_PATH = MODEL_DIR / "heracleum_classifier.h5"
+MODEL_SAVE_PATH = MODEL_DIR / "heracleum_classifier_V1.h5"
 RESULTS_DIR = ROOT_DIR / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
