@@ -1,3 +1,4 @@
+# This Script can be used to fetch the data set from GBIF just from one perticular type 
 import os
 import requests
 import time

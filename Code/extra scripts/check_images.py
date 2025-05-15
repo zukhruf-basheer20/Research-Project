@@ -1,3 +1,4 @@
+#This script check from broken images in data set 
 from pathlib import Path
 from PIL import Image, UnidentifiedImageError
 import shutil
@@ -11,6 +12,7 @@ root_dirs = [
     Path("../../data/val/Heracleum_sosnowskyi"),
     Path("../../data/val/Heracleum_persicum"),
 ]
+
 
 # Create broken dir
 BROKEN_DIR = Path("../../data/broken")

@@ -1,3 +1,4 @@
+# Dis script is used to split the raw data set into train and value 80/20 respetivle with defined in classes
 import os
 import shutil
 import random

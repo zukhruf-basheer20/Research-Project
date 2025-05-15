@@ -1,3 +1,5 @@
+# This script is used to train over the imagenet model weigths with 10 Epox after trainng this it has generated model which has given me about 32000 images.
+# This script has generated model named as heracleum_classifier.h5 unde models dir.
 import os
 from pathlib import Path
 import numpy as np

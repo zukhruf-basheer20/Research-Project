@@ -1,3 +1,4 @@
+# This script is ued to filer the images it used Imagenet weights to fileter it it has given me 819 images from 62000 data set
 import os
 import shutil
 import numpy as np
