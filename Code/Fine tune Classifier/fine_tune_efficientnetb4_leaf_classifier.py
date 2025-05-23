@@ -4,30 +4,60 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
-from torchvision import datasets, transforms, models
+from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
-import shutil
+from PIL import Image
 
-# ==== Paths and Setup ====
+# ==== Directory Setup ====
+def make_dir(path):
+    if not path.exists():
+        path.mkdir(parents=True)
+        print(f"📁 Created directory: {path}")
+
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / 'data' / 'tune'
 MODEL_NAME = 'EfficientNetB4_V1'
 MODEL_DIR = ROOT_DIR / 'models' / 'EfficientNetB4'
-MODEL_DIR.mkdir(parents=True, exist_ok=True)
+make_dir(MODEL_DIR)
 MODEL_SAVE_PATH = MODEL_DIR / f'{MODEL_NAME}.pt'
 WEIGHTS_DIR = ROOT_DIR / 'trained_weights'
-WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
+make_dir(WEIGHTS_DIR)
 WEIGHTS_SAVE_PATH = WEIGHTS_DIR / f'{MODEL_NAME}.weights.pth'
 RESULTS_DIR = ROOT_DIR / 'results'
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+make_dir(RESULTS_DIR)
 RESULTS_SAVE_PATH = RESULTS_DIR / f'{MODEL_NAME}.png'
 PLANTNET_WEIGHTS_PATH = ROOT_DIR / 'weights' / 'plantnet' / 'efficientnet_b4_weights_best_acc.tar'
 FINE_TUNE_DIR = ROOT_DIR / 'fine_tune_classifier'
-FINE_TUNE_DIR.mkdir(parents=True, exist_ok=True)
+make_dir(FINE_TUNE_DIR)
 
 # ==== Device ====
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"💻 Using device: {device}")
+
+# ==== Corrupt Image Checker ====
+def check_corrupted_images(data_dir):
+    print("🔍 Scanning for corrupted images...")
+    corrupted = []
+    for folder in ["leaf", "no_leaf"]:
+        folder_path = data_dir / folder
+        if not folder_path.exists():
+            print(f"⚠️ Warning: {folder_path} does not exist!")
+            continue
+        for img_file in folder_path.rglob("*"):
+            if img_file.is_file():
+                try:
+                    with Image.open(img_file) as img:
+                        img.verify()
+                except Exception as e:
+                    print(f"❌ Corrupted: {img_file} ({e})")
+                    corrupted.append(img_file)
+    if not corrupted:
+        print("✅ No corrupted images found in leaf/no_leaf.")
+    else:
+        print(f"🚨 {len(corrupted)} corrupted images found! (see above)")
+    print("----\n")
+
+check_corrupted_images(DATA_DIR)
 
 # ==== Data Transforms ====
 IMAGE_SIZE = 380
@@ -52,30 +82,26 @@ data_transforms = {
 }
 
 # ==== Datasets and Dataloaders ====
-data_dir = DATA_DIR
-# Split 20% of training data for validation
-dataset = datasets.ImageFolder(data_dir)
+print("🧩 Loading dataset...")
+dataset = datasets.ImageFolder(DATA_DIR)
 class_names = dataset.classes
 num_classes = len(class_names)
-print(f"Classes found: {class_names}")
+print(f"🌱 Classes found: {class_names}")
 
-# Split train/val
 from torch.utils.data import random_split, DataLoader
 dataset_size = len(dataset)
 val_size = int(0.2 * dataset_size)
 train_size = dataset_size - val_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-# Apply transforms
 train_dataset.dataset.transform = data_transforms['train']
 val_dataset.dataset.transform = data_transforms['val']
 
-# train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
-# val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-
 dataloaders = {'train': train_loader, 'val': val_loader}
+
+print("✅ Data loaders ready.")
 
 # ==== Model Setup (EfficientNet-B4) ====
 try:
@@ -85,7 +111,7 @@ except ImportError:
 
 model = EfficientNet.from_name('efficientnet-b4', num_classes=num_classes)
 state = torch.load(PLANTNET_WEIGHTS_PATH, map_location=device)
-print("Checkpoint keys:", state.keys())
+print(f"Checkpoint keys: {state.keys()}")
 model.load_state_dict(state["model"], strict=False)
 print("✅ Loaded PlantNet EfficientNet-B4 weights.")
 
@@ -98,7 +124,6 @@ else:
     in_features = model._fc.in_features
     model._fc = nn.Linear(in_features, num_classes)
     criterion = nn.CrossEntropyLoss()
-
 model = model.to(device)
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
@@ -114,8 +139,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS):
     val_loss_history = []
 
     for epoch in range(num_epochs):
-        print(f'Epoch {epoch+1}/{num_epochs}')
-        print('-' * 10)
+        print(f'\n🌙 Epoch {epoch+1}/{num_epochs} — Let the learning begin!')
+        print('-' * 20)
 
         for phase in ['train', 'val']:
             if phase == 'train':
@@ -127,7 +152,8 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS):
             running_corrects = 0
             running_total = 0
 
-            for inputs, labels in dataloaders[phase]:
+            # Print progress every 10 batches
+            for batch_idx, (inputs, labels) in enumerate(dataloaders[phase]):
                 inputs = inputs.to(device)
                 labels = labels.to(device).float() if num_classes == 2 else labels.to(device)
 
@@ -153,6 +179,9 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS):
                     running_corrects += torch.sum(preds == labels).item()
                 running_total += labels.size(0)
 
+                if batch_idx % 10 == 0:
+                    print(f"   [{phase}] Batch {batch_idx+1} | Loss: {loss.item():.4f}")
+
             epoch_loss = running_loss / running_total
             epoch_acc = running_corrects / running_total
 
@@ -164,21 +193,19 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS):
                 val_loss_history.append(epoch_loss)
                 val_acc_history.append(epoch_acc)
 
-            print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
+            print(f'{phase.capitalize()} Loss: {epoch_loss:.4f} | Acc: {epoch_acc:.4f}')
 
-            # deep copy the model
+            # Save best model
             if phase == 'val' and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = model.state_dict()
 
-        print()
-
-    print(f'🏆 Best val Acc: {best_acc:4f}')
-    # load best model weights
+    print(f'\n🏆 Best val Acc: {best_acc:.4f}')
     model.load_state_dict(best_model_wts)
     return model, train_acc_history, val_acc_history, train_loss_history, val_loss_history
 
 # ==== Train ====
+print("🚦 Starting training loop...")
 model, train_acc, val_acc, train_loss, val_loss = train_model(
     model, criterion, optimizer, exp_lr_scheduler, num_epochs=EPOCHS)
 
@@ -213,4 +240,4 @@ plt.tight_layout()
 plt.savefig(RESULTS_SAVE_PATH)
 print(f"📈 Training plot saved to {RESULTS_SAVE_PATH}")
 
-print("✨ All done! Go forth and classify.")
+print("✨ All done! Go forth and classify with swagger.")
