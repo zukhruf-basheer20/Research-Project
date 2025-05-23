@@ -14,18 +14,18 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data" / "tune"
 LEAF_DIR = DATA_DIR / "leaf"
 NO_LEAF_DIR = DATA_DIR / "no_leaf"
-MODEL_NAME = "leaf_classifier"
-MODEL_DIR = ROOT_DIR / "models"
+MODEL_NAME = "leaf_classifier_Ef_B4_V1"
+MODEL_DIR = ROOT_DIR / "models / EfficientNetB4"
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_SAVE_PATH = MODEL_DIR / f"{MODEL_NAME}_V1.keras"
-WEIGHTS_DIR = ROOT_DIR / "trained_weights"
+WEIGHTS_DIR = ROOT_DIR / "trained_weights / EfficientNetB4"
 WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
 WEIGHTS_SAVE_PATH = WEIGHTS_DIR / f"{MODEL_NAME}_V1.weights.h5"
-RESULTS_DIR = ROOT_DIR / "results"
+RESULTS_DIR = ROOT_DIR / "results / EfficientNetB4"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 RESULTS_SAVE_PATH = RESULTS_DIR / f"{MODEL_NAME}_V1.png"
-WEIGHTS_TAR = ROOT_DIR / "Weights" / "plantnet" / "efficientnet_b4_weights_best_acc.tar"
-TEMP_WEIGHTS_DIR = ROOT_DIR / "Weights" / "plantnet" / "tmp_extracted_weights"
+WEIGHTS_TAR = ROOT_DIR / "weights" / "plantnet" / "efficientnet_b4_weights_best_acc.tar"
+TEMP_WEIGHTS_DIR = ROOT_DIR / "weights" / "plantnet" / "tmp_extracted_weights"
 FINE_TUNE_DIR = ROOT_DIR / "fine_tune_classifier"
 FINE_TUNE_DIR.mkdir(parents=True, exist_ok=True)  # For completeness
 
