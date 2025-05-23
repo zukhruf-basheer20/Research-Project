@@ -30,3 +30,12 @@ Code/
 ├── README.md                                   # Overview of the project (you're reading it!)
 ├── requirements.txt                            # Python dependencies
 ```
+To grip count of images
+```
+ls | grep "Heracleum_mantegazzianum_Sommier" | wc -l
+ls | grep "Heracleum_sosnowskyi_Manden" | wc -l
+ls | grep "Heracleum_persicum_Desf" | wc -l
+```
+To delete files
+```
+ls | grep "Heracleum_mantegazzianum_Sommier" | xargs rm
