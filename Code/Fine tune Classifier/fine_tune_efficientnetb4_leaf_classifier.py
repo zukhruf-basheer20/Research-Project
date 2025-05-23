@@ -6,7 +6,8 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
-from PIL import Image
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # ==== Directory Setup ====
 def make_dir(path):
