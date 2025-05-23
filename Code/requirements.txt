@@ -60,5 +60,6 @@ pygbif==0.6.5
 torch>=2.0.0
 torchvision>=0.15.0
 torchaudio>=2.0.0
+efficientnet_pytorch
 
 git+https://github.com/facebookresearch/detectron2.git

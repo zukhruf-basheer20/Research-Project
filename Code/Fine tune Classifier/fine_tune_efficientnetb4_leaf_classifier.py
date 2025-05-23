@@ -11,17 +11,17 @@ import shutil
 # ==== Paths and Setup ====
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / 'data' / 'tune'
-MODEL_NAME = 'leaf_classifier'
-MODEL_DIR = ROOT_DIR / 'models'
+MODEL_NAME = 'EfficientNetB4_V1'
+MODEL_DIR = ROOT_DIR / 'models' / 'EfficientNetB4'
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
-MODEL_SAVE_PATH = MODEL_DIR / f'{MODEL_NAME}_V1.pt'
+MODEL_SAVE_PATH = MODEL_DIR / f'{MODEL_NAME}.pt'
 WEIGHTS_DIR = ROOT_DIR / 'trained_weights'
 WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
-WEIGHTS_SAVE_PATH = WEIGHTS_DIR / f'{MODEL_NAME}_V1.weights.pth'
+WEIGHTS_SAVE_PATH = WEIGHTS_DIR / f'{MODEL_NAME}.weights.pth'
 RESULTS_DIR = ROOT_DIR / 'results'
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-RESULTS_SAVE_PATH = RESULTS_DIR / f'{MODEL_NAME}_V1.png'
-PLANTNET_WEIGHTS_PATH = ROOT_DIR / 'Weights' / 'plantnet' / 'efficientnet_b4_weights_best_acc.tar'
+RESULTS_SAVE_PATH = RESULTS_DIR / f'{MODEL_NAME}.png'
+PLANTNET_WEIGHTS_PATH = ROOT_DIR / 'weights' / 'plantnet' / 'efficientnet_b4_weights_best_acc.tar'
 FINE_TUNE_DIR = ROOT_DIR / 'fine_tune_classifier'
 FINE_TUNE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -70,8 +70,11 @@ train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 train_dataset.dataset.transform = data_transforms['train']
 val_dataset.dataset.transform = data_transforms['val']
 
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
-val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
+# train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
+# val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+
 dataloaders = {'train': train_loader, 'val': val_loader}
 
 # ==== Model Setup (EfficientNet-B4) ====
@@ -82,7 +85,8 @@ except ImportError:
 
 model = EfficientNet.from_name('efficientnet-b4', num_classes=num_classes)
 state = torch.load(PLANTNET_WEIGHTS_PATH, map_location=device)
-model.load_state_dict(state['model_state_dict'] if 'model_state_dict' in state else state)
+print("Checkpoint keys:", state.keys())
+model.load_state_dict(state["model"], strict=False)
 print("✅ Loaded PlantNet EfficientNet-B4 weights.")
 
 # Adapt final FC layer for binary classification
