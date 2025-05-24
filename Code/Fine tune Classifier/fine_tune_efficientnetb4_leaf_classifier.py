@@ -241,4 +241,11 @@ plt.tight_layout()
 plt.savefig(RESULTS_SAVE_PATH)
 print(f"📈 Training plot saved to {RESULTS_SAVE_PATH}")
 
+# ==== Print Final Metrics ====
+print("==== Final Training Results ====")
+print(f"Train Acc: {train_acc[-1]:.4f}")
+print(f"Train Loss: {train_loss[-1]:.4f}")
+print(f"Val Acc: {val_acc[-1]:.4f}")
+print(f"Val Loss: {val_loss[-1]:.4f}")
+
 print("✨ All done! Go forth and classify with swagger.")
