@@ -28,7 +28,7 @@ def make_dir(path):
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / 'data' / 'tune'
-MODEL_NAME = 'EfficientNetB4_V4'
+MODEL_NAME = 'EfficientNetB4_V5'
 MODEL_DIR = ROOT_DIR / 'models' / 'EfficientNetB4'
 make_dir(MODEL_DIR)
 MODEL_SAVE_PATH = MODEL_DIR / f'{MODEL_NAME}.pt'
@@ -74,7 +74,7 @@ check_corrupted_images(DATA_DIR)
 # ==== Data Transforms ====
 IMAGE_SIZE = 380
 BATCH_SIZE = 8
-EPOCHS = 30  # Train for more epochs to allow early stopping to kick in
+EPOCHS = 40  # Increased epochs
 
 data_transforms = {
     'train': transforms.Compose([
@@ -127,16 +127,21 @@ state = torch.load(PLANTNET_WEIGHTS_PATH, map_location=device)
 print(f"Checkpoint keys: {state.keys()}")
 model.load_state_dict(state["model"], strict=False)
 
-# Optional: Freeze all layers except final fully-connected (fine-tune classifier only)
+# === V5: Unfreeze FC + last two blocks ===
 for param in model.parameters():
     param.requires_grad = False
-# Unfreeze only the final FC layer and dropout
+# Unfreeze last two blocks
+for param in model._blocks[-2].parameters():
+    param.requires_grad = True
+for param in model._blocks[-1].parameters():
+    param.requires_grad = True
+# Unfreeze FC layer
 for param in model._fc.parameters():
     param.requires_grad = True
+
 if hasattr(model, "_dropout"):
-    param = model._dropout
-    param.p = 0.5
-    print(f"Dropout set to: {param.p}")
+    model._dropout.p = 0.4
+    print(f"Dropout set to: {model._dropout.p}")
 
 print("✅ Loaded PlantNet EfficientNet-B4 weights.")
 
@@ -151,12 +156,12 @@ else:
     criterion = nn.CrossEntropyLoss()
 model = model.to(device)
 
-optimizer = optim.Adam(model.parameters(), lr=5e-5, weight_decay=2e-4)
+optimizer = optim.Adam(model.parameters(), lr=5e-5, weight_decay=1e-4)
 exp_lr_scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
 # ==== Early Stopping ====
 class EarlyStopping:
-    def __init__(self, patience=5, min_delta=1e-4):
+    def __init__(self, patience=7, min_delta=1e-4):
         self.patience = patience
         self.min_delta = min_delta
         self.counter = 0
