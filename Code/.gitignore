@@ -4,3 +4,4 @@ data/raw
 data/train
 data/val
 weights
+trained_weights
