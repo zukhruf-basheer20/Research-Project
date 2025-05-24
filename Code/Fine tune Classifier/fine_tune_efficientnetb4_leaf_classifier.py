@@ -6,7 +6,18 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 from torchvision import datasets, transforms
 import matplotlib.pyplot as plt
-from PIL import ImageFile
+from PIL import ImageFile, Image
+import numpy as np
+import random
+
+# ==== Reproducibility ====
+SEED = 42
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+random.seed(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # ==== Directory Setup ====
@@ -17,7 +28,7 @@ def make_dir(path):
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / 'data' / 'tune'
-MODEL_NAME = 'EfficientNetB4_V1'
+MODEL_NAME = 'EfficientNetB4_V4'
 MODEL_DIR = ROOT_DIR / 'models' / 'EfficientNetB4'
 make_dir(MODEL_DIR)
 MODEL_SAVE_PATH = MODEL_DIR / f'{MODEL_NAME}.pt'
@@ -62,15 +73,16 @@ check_corrupted_images(DATA_DIR)
 
 # ==== Data Transforms ====
 IMAGE_SIZE = 380
-BATCH_SIZE = 16
-EPOCHS = 20
+BATCH_SIZE = 8
+EPOCHS = 30  # Train for more epochs to allow early stopping to kick in
 
 data_transforms = {
     'train': transforms.Compose([
-        transforms.RandomResizedCrop(IMAGE_SIZE),
+        transforms.RandomResizedCrop(IMAGE_SIZE, scale=(0.7, 1.0)),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(30),
-        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.1),
+        transforms.RandomVerticalFlip(),
+        transforms.RandomRotation(40),
+        transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.3, hue=0.2),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
@@ -93,7 +105,7 @@ from torch.utils.data import random_split, DataLoader
 dataset_size = len(dataset)
 val_size = int(0.2 * dataset_size)
 train_size = dataset_size - val_size
-train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+train_dataset, val_dataset = random_split(dataset, [train_size, val_size], generator=torch.Generator().manual_seed(SEED))
 
 train_dataset.dataset.transform = data_transforms['train']
 val_dataset.dataset.transform = data_transforms['val']
@@ -114,6 +126,18 @@ model = EfficientNet.from_name('efficientnet-b4', num_classes=num_classes)
 state = torch.load(PLANTNET_WEIGHTS_PATH, map_location=device)
 print(f"Checkpoint keys: {state.keys()}")
 model.load_state_dict(state["model"], strict=False)
+
+# Optional: Freeze all layers except final fully-connected (fine-tune classifier only)
+for param in model.parameters():
+    param.requires_grad = False
+# Unfreeze only the final FC layer and dropout
+for param in model._fc.parameters():
+    param.requires_grad = True
+if hasattr(model, "_dropout"):
+    param = model._dropout
+    param.p = 0.5
+    print(f"Dropout set to: {param.p}")
+
 print("✅ Loaded PlantNet EfficientNet-B4 weights.")
 
 # Adapt final FC layer for binary classification
@@ -127,11 +151,29 @@ else:
     criterion = nn.CrossEntropyLoss()
 model = model.to(device)
 
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+optimizer = optim.Adam(model.parameters(), lr=5e-5, weight_decay=2e-4)
+exp_lr_scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=EPOCHS)
 
-# ==== Training Loop ====
-def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS):
+# ==== Early Stopping ====
+class EarlyStopping:
+    def __init__(self, patience=5, min_delta=1e-4):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.best_loss = float('inf')
+        self.early_stop = False
+
+    def __call__(self, val_loss):
+        if val_loss < self.best_loss - self.min_delta:
+            self.best_loss = val_loss
+            self.counter = 0
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
+
+# ==== Training Loop with Early Stopping ====
+def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS, patience=7):
     best_model_wts = model.state_dict()
     best_acc = 0.0
     train_acc_history = []
@@ -139,6 +181,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS):
     train_loss_history = []
     val_loss_history = []
 
+    early_stopper = EarlyStopping(patience=patience)
     for epoch in range(num_epochs):
         print(f'\n🌙 Epoch {epoch+1}/{num_epochs} — Let the learning begin!')
         print('-' * 20)
@@ -153,7 +196,6 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS):
             running_corrects = 0
             running_total = 0
 
-            # Print progress every 10 batches
             for batch_idx, (inputs, labels) in enumerate(dataloaders[phase]):
                 inputs = inputs.to(device)
                 labels = labels.to(device).float() if num_classes == 2 else labels.to(device)
@@ -193,6 +235,11 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS):
             else:
                 val_loss_history.append(epoch_loss)
                 val_acc_history.append(epoch_acc)
+                early_stopper(epoch_loss)
+                if early_stopper.early_stop:
+                    print(f"\n⏹️ Early stopping triggered at epoch {epoch+1}")
+                    model.load_state_dict(best_model_wts)
+                    return model, train_acc_history, val_acc_history, train_loss_history, val_loss_history
 
             print(f'{phase.capitalize()} Loss: {epoch_loss:.4f} | Acc: {epoch_acc:.4f}')
 
@@ -208,7 +255,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=EPOCHS):
 # ==== Train ====
 print("🚦 Starting training loop...")
 model, train_acc, val_acc, train_loss, val_loss = train_model(
-    model, criterion, optimizer, exp_lr_scheduler, num_epochs=EPOCHS)
+    model, criterion, optimizer, exp_lr_scheduler, num_epochs=EPOCHS, patience=7)
 
 # ==== Save Model ====
 torch.save(model, MODEL_SAVE_PATH)
