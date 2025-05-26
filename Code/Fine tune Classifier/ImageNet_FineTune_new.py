@@ -10,7 +10,7 @@ from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # ==== CONFIGURATION ====
-MODEL_NAME = "Imagenet_new_V2"
+MODEL_NAME = "Imagenet_new_V3"
 
 MODEL_DIR = Path("../models/new_imagenet")
 WEIGHTS_DIR = Path("../trained_weights")
@@ -69,7 +69,8 @@ model = models.Sequential([
 ])
 
 model.compile(
-    optimizer='adam',
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+    # optimizer='adam',
     loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
     metrics=['accuracy']
 )
@@ -132,15 +133,8 @@ print(f"🟢 Training curves saved at: {PLOT_PATH}")
 # ==== PRINT FINAL & BEST METRICS ====
 print("\n🎯 === Training Summary ===")
 print(f"  Final train accuracy:     {acc[-1]:.4f}")
-print(f"  Final validation accuracy:{val_acc[-1]:.4f}")
 print(f"  Final train loss:         {loss[-1]:.4f}")
+print(f"  Final validation accuracy:{val_acc[-1]:.4f}")
 print(f"  Final validation loss:    {val_loss[-1]:.4f}")
 
-# Best epoch info
-best_val_epoch = int(np.argmax(val_acc))
-print(f"\n🏅 === Best Validation Epoch: {best_val_epoch + 1} ===")
-print(f"  Best validation accuracy: {val_acc[best_val_epoch]:.4f}")
-print(f"  Best validation loss:     {val_loss[best_val_epoch]:.4f}")
-print(f"  Train accuracy at best:   {acc[best_val_epoch]:.4f}")
-print(f"  Train loss at best:       {loss[best_val_epoch]:.4f}")
 print("==========================================")
