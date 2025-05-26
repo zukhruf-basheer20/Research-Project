@@ -10,12 +10,12 @@ from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # ==== CONFIGURATION ====
-MODEL_NAME = "Imagenet_new_V1"
+MODEL_NAME = "Imagenet_new_V2"
 
-MODEL_DIR = Path("models/new_imagenet")
-WEIGHTS_DIR = Path("trained_weights")
-RESULTS_DIR = Path("results/new_imagenet")
-DATA_DIR = Path("data")
+MODEL_DIR = Path("../models/new_imagenet")
+WEIGHTS_DIR = Path("../trained_weights")
+RESULTS_DIR = Path("../results/new_imagenet")
+DATA_DIR = Path("../data")
 TRAIN_DIR = DATA_DIR / "train"
 VAL_DIR = DATA_DIR / "val"
 
@@ -129,3 +129,18 @@ plt.grid(True)
 plt.tight_layout()
 plt.savefig(PLOT_PATH)
 print(f"🟢 Training curves saved at: {PLOT_PATH}")
+# ==== PRINT FINAL & BEST METRICS ====
+print("\n🎯 === Training Summary ===")
+print(f"  Final train accuracy:     {acc[-1]:.4f}")
+print(f"  Final validation accuracy:{val_acc[-1]:.4f}")
+print(f"  Final train loss:         {loss[-1]:.4f}")
+print(f"  Final validation loss:    {val_loss[-1]:.4f}")
+
+# Best epoch info
+best_val_epoch = int(np.argmax(val_acc))
+print(f"\n🏅 === Best Validation Epoch: {best_val_epoch + 1} ===")
+print(f"  Best validation accuracy: {val_acc[best_val_epoch]:.4f}")
+print(f"  Best validation loss:     {val_loss[best_val_epoch]:.4f}")
+print(f"  Train accuracy at best:   {acc[best_val_epoch]:.4f}")
+print(f"  Train loss at best:       {loss[best_val_epoch]:.4f}")
+print("==========================================")
