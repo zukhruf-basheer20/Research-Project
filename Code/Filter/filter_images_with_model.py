@@ -23,7 +23,7 @@ model = load_model(MODEL_PATH)
 # === 🧠 Parameters ===
 IMAGE_SIZE = (224, 224)
 CONFIDENCE_THRESHOLD = 0.80
-class_names = ['Heracleum_mantegazzianum', 'Heracleum_persicum', 'Heracleum_sosnowskyi']
+class_names = ['leaf']
 
 # === 🔍 Process Images ===
 all_images = [f for f in os.listdir(RAW_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]

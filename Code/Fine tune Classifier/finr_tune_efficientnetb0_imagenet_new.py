@@ -10,11 +10,11 @@ from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # ==== CONFIGURATION ====
-MODEL_NAME = "Imagenet_new_V10"
+MODEL_NAME = "EffiecientnNetB0_V1"
 
-MODEL_DIR = Path("../models/new_imagenet")
-WEIGHTS_DIR = Path("../trained_weights")
-RESULTS_DIR = Path("../results/new_imagenet")
+MODEL_DIR = Path("../models/EffiecientnNetB0")
+WEIGHTS_DIR = Path("../trained_weights/EffiecientnNetB0")
+RESULTS_DIR = Path("../results/EffiecientnNetB0")
 DATA_DIR = Path("../data")
 TRAIN_DIR = DATA_DIR / "train"
 VAL_DIR = DATA_DIR / "val"
