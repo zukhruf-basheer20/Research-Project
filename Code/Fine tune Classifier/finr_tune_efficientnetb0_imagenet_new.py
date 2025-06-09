@@ -10,7 +10,7 @@ from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # ==== CONFIGURATION ====
-MODEL_NAME = "EffiecientnNetB0_V5"
+MODEL_NAME = "EffiecientnNetB0_V6"
 
 MODEL_DIR = Path("../models/EffiecientnNetB0")
 WEIGHTS_DIR = Path("../trained_weights/EffiecientnNetB0")
@@ -21,7 +21,7 @@ VAL_DIR = DATA_DIR / "val"
 
 IMAGE_SIZE = (224, 224)
 BATCH_SIZE = 32
-EPOCHS = 50
+EPOCHS = 150
 
 # ==== CREATE FOLDERS IF NEEDED ====
 for d in [MODEL_DIR, WEIGHTS_DIR, RESULTS_DIR]:
@@ -59,7 +59,7 @@ val_data = val_gen.flow_from_directory(
 
 # ==== MODEL DEFINITION ====
 base_model = EfficientNetB0(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-base_model.trainable = False
+base_model.trainable = True
 
 model = models.Sequential([
     base_model,
