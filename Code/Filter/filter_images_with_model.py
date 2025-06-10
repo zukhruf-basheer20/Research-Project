@@ -10,8 +10,8 @@ from PIL import UnidentifiedImageError
 # === 🔧 Paths ===
 ROOT_DIR = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT_DIR / "data" / "raw"
-OUTPUT_DIR = ROOT_DIR / "data" / "Filtered_V2.1(80%)"
-MODEL_PATH = ROOT_DIR / "models" / "classifier" /"heracleum_classifier_V2.1.keras"
+OUTPUT_DIR = ROOT_DIR / "data" / "Filtered_EffiecientnNetB0_V6"
+MODEL_PATH = ROOT_DIR / "models" / "EffiecientnNetB0" / "EffiecientnNetB0_V6.keras"
 
 # Create output directory (no subdirs)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -23,7 +23,9 @@ model = load_model(MODEL_PATH)
 # === 🧠 Parameters ===
 IMAGE_SIZE = (224, 224)
 CONFIDENCE_THRESHOLD = 0.80
-class_names = ['leaf']
+class_names = ['leaf', 'no_leaf']  # Make this match training class order!
+target_class = 'leaf'
+target_class_idx = class_names.index(target_class)
 
 # === 🔍 Process Images ===
 all_images = [f for f in os.listdir(RAW_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
@@ -35,7 +37,7 @@ error_count = 0
 
 for idx, fname in enumerate(all_images, 1):  # start from 1
     print(f"🔄 Processing image {idx} / {len(all_images)}")
-    
+
     fpath = RAW_DIR / fname
     try:
         img = image.load_img(fpath, target_size=IMAGE_SIZE)
@@ -43,22 +45,26 @@ for idx, fname in enumerate(all_images, 1):  # start from 1
         x = np.expand_dims(x, axis=0)
         x = preprocess_input(x)
 
-        preds = model.predict(x)[0]
+        preds = np.squeeze(model.predict(x))
         pred_class_idx = np.argmax(preds)
         confidence = preds[pred_class_idx]
 
-        if confidence >= CONFIDENCE_THRESHOLD:
+        if pred_class_idx == target_class_idx and confidence >= CONFIDENCE_THRESHOLD:
             dest_path = OUTPUT_DIR / fname
             shutil.copy2(fpath, dest_path)
             filtered_count += 1
         else:
-            print(f"⚠️ Skipped: low confidence ({confidence:.2f})")
+            print(f"⚠️ Skipped: predicted '{class_names[pred_class_idx]}' with confidence {confidence:.2f}")
             skipped_count += 1
 
     except UnidentifiedImageError:
-        print(f"❌ Unreadable image.")
+        print(f"❌ Unreadable image: {fname}")
         error_count += 1
     except Exception as e:
-        print(f"❌ Error processing.")
+        print(f"❌ Error processing {fname}: {str(e)}")
         error_count += 1
-print(f"✅ Done! {filtered_count} images saved to {OUTPUT_DIR} skipped images due to low confidance {skipped_count} and unredable images count {error_count}")
+
+print("\n✅ Done!")
+print(f"🟢 Saved {filtered_count} images to {OUTPUT_DIR}")
+print(f"⚠️ Skipped {skipped_count} due to low confidence or wrong class")
+print(f"❌ Encountered {error_count} unreadable or broken images")
