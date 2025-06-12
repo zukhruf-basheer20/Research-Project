@@ -10,7 +10,7 @@ from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # ==== CONFIGURATION ====
-MODEL_NAME = "EffiecientnNetB0_V8"
+MODEL_NAME = "EffiecientnNetB0_V6"
 
 MODEL_DIR = Path("../models/EffiecientnNetB0")
 WEIGHTS_DIR = Path("../trained_weights/EffiecientnNetB0")
@@ -69,7 +69,7 @@ model = models.Sequential([
 ])
 
 model.compile(
-    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-6),
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
     # optimizer='adam',
     loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
     metrics=['accuracy']
