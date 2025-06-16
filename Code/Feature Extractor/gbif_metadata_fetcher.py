@@ -56,7 +56,7 @@ def get_gbif_metadata(gbif_id, fname, retries=2):
         # print(f"🔍 Attempt {attempt + 1}/{retries + 1}: Fetching {url} (for file: {fname})")
         try:
             response = requests.get(url, timeout=10)
-            print(f"📡 Response status code: {response.status_code}")
+            # print(f"📡 Response status code: {response.status_code}")
 
             if response.status_code == 200:
                 # print(f"✅ SUCCESS: Direct lookup for ID {gbif_id}")
