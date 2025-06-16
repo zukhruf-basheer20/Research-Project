@@ -41,28 +41,61 @@ basis_of_record_list = []
 # === GBIF METADATA FETCHER ===
 def get_gbif_metadata(gbif_id):
     try:
+        # Try direct lookup
         url = f"https://api.gbif.org/v1/occurrence/{gbif_id}"
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
-            data = response.json()
-            return {
-                "latitude": data.get("decimalLatitude"),
-                "longitude": data.get("decimalLongitude"),
-                "country": data.get("country"),
-                "event_date": data.get("eventDate"),
-                "dataset_key": data.get("datasetKey"),
-                "basis_of_record": data.get("basisOfRecord")
-            }
+            print(f"✅ Direct lookup succeeded")
+            return parse_metadata(response.json())
+
+        # Fallback: search by media ID
+        search_url = f"https://api.gbif.org/v1/occurrence/search?media={gbif_id}"
+        search_response = requests.get(search_url, timeout=10)
+        if search_response.status_code == 200:
+            results = search_response.json().get('results', [])
+            if results:
+                print(f"✅ Fallback search succeeded, using first result")
+                return parse_metadata(results[0])  # pick first, or add logic for best match
+
     except Exception as e:
         print(f"⚠️ Failed to fetch metadata for GBIF ID {gbif_id}: {e}")
-    return {
-        "latitude": None,
-        "longitude": None,
-        "country": None,
-        "event_date": None,
-        "dataset_key": None,
-        "basis_of_record": None
+
+    return empty_metadata()
+
+def parse_metadata(data):
+    # Extract classic fields
+    meta = {
+        "latitude": data.get("decimalLatitude"),
+        "longitude": data.get("decimalLongitude"),
+        "country": data.get("country"),
+        "event_date": data.get("eventDate"),
+        "dataset_key": data.get("datasetKey"),
+        "basis_of_record": data.get("basisOfRecord"),
+        "scientific_name": data.get("scientificName"),
+        "taxon_rank": data.get("taxonRank"),
+        "vernacular_name": data.get("vernacularName"),
+        "habitat": data.get("habitat"),
+        "recorded_by": data.get("recordedBy"),
+        "identified_by": data.get("identifiedBy"),
     }
+    # Extract first image link if present (typical in extensions/media)
+    extensions = data.get("extensions") or {}
+    multimedia = extensions.get("http://rs.gbif.org/terms/1.0/Multimedia")
+    if multimedia and isinstance(multimedia, list):
+        meta["media_url"] = multimedia[0].get("http://purl.org/dc/terms/identifier")
+    else:
+        # fallback to 'media' array if available
+        media = data.get("media")
+        if media and isinstance(media, list) and "identifier" in media[0]:
+            meta["media_url"] = media[0]["identifier"]
+        else:
+            meta["media_url"] = None
+    return meta
+
+
+def empty_metadata():
+    return dict.fromkeys(["latitude", "longitude", "country", "event_date", "dataset_key", "basis_of_record"], None)
+
 
 # === FIND IMAGES ===
 image_files = [f for f in os.listdir(INPUT_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
