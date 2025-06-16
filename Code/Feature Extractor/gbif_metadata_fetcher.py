@@ -146,6 +146,7 @@ for i, fname in enumerate(image_files, 1):
                 gbif_id = None
 
         print(f"📁 Processing file: {fname} | Extracted GBIF ID: {gbif_id}")
+        print(f"✅ Processed: {fname} ({i}/{len(image_files)})")
 
         metadata = get_gbif_metadata(gbif_id, fname)
 
