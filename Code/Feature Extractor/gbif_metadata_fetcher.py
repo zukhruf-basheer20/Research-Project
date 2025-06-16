@@ -12,7 +12,7 @@ import time
 
 # === PATHS ===
 ROOT_DIR = Path(__file__).resolve().parents[1]
-INPUT_DIR = ROOT_DIR / "data" / "leaf"
+INPUT_DIR = ROOT_DIR / "data" / "Filtered_EffiecientnNetB0_V6"
 MODEL_PATH = ROOT_DIR / "models" / "EffiecientnNetB0" / "EffiecientnNetB0_V6.keras"
 OUTPUT_CSV = ROOT_DIR / "CSV Files" / "EffNetB0_leaf_deep_features_with_metadata_new_16June.csv"
 
@@ -59,9 +59,9 @@ def get_gbif_metadata(gbif_id, fname, retries=2):
             print(f"📡 Response status code: {response.status_code}")
 
             if response.status_code == 200:
-                print(f"✅ SUCCESS: Direct lookup for ID {gbif_id}")
+                # print(f"✅ SUCCESS: Direct lookup for ID {gbif_id}")
                 metadata = parse_metadata(response.json())
-                print(f"🌟 Extracted metadata for ID {gbif_id}: {metadata}")
+                # print(f"🌟 Extracted metadata for ID {gbif_id}: {metadata}")
                 return metadata
             else:
                 print(f"⚠️ WARNING: Direct lookup failed for ID {gbif_id} (Status: {response.status_code}) for file: {fname}")
@@ -144,9 +144,6 @@ for i, fname in enumerate(image_files, 1):
                 gbif_id = last  # no suffix
             else:
                 gbif_id = None
-
-        print(f"📁 Processing file: {fname} | Extracted GBIF ID: {gbif_id}")
-        print(f"✅ Processed: {fname} ({i}/{len(image_files)})")
 
         metadata = get_gbif_metadata(gbif_id, fname)
 
