@@ -53,7 +53,7 @@ def get_gbif_metadata(gbif_id, fname, retries=2):
     attempt = 0
 
     while attempt <= retries:
-        print(f"🔍 Attempt {attempt + 1}/{retries + 1}: Fetching {url} (for file: {fname})")
+        # print(f"🔍 Attempt {attempt + 1}/{retries + 1}: Fetching {url} (for file: {fname})")
         try:
             response = requests.get(url, timeout=10)
             print(f"📡 Response status code: {response.status_code}")
