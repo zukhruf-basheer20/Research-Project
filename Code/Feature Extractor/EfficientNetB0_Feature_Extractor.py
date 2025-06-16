@@ -12,7 +12,7 @@ from tensorflow.keras import layers
 ROOT_DIR = Path(__file__).resolve().parents[1]
 INPUT_DIR = ROOT_DIR / "data" / "Filtered_EffiecientnNetB0_V6"
 MODEL_PATH = ROOT_DIR / "models" / "EffiecientnNetB0" / "EffiecientnNetB0_V6.keras"
-OUTPUT_CSV = ROOT_DIR / "CSV Files" / "EffNetB0_leaf_deep_features_with_metadata.csv"
+OUTPUT_CSV = ROOT_DIR / "CSV Files" / "EffNetB0_leaf_deep_features_with_metadata_new_16June.csv"
 
 # === LOAD MODEL ===
 print(f"📦 Loading model from: {MODEL_PATH}")
@@ -37,33 +37,38 @@ country_list = []
 event_date_list = []
 dataset_key_list = []
 basis_of_record_list = []
+scientific_name_list = []
+taxon_rank_list = []
+vernacular_name_list = []
+habitat_list = []
+recorded_by_list = []
+identified_by_list = []
+media_url_list = []
 
 # === GBIF METADATA FETCHER ===
 def get_gbif_metadata(gbif_id):
     try:
-        # Try direct lookup
         url = f"https://api.gbif.org/v1/occurrence/{gbif_id}"
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
-            print(f"✅ Direct lookup succeeded")
+            print(f"✅ Direct lookup for ID {gbif_id}")
             return parse_metadata(response.json())
 
-        # Fallback: search by media ID
+        # Fallback search
         search_url = f"https://api.gbif.org/v1/occurrence/search?media={gbif_id}"
         search_response = requests.get(search_url, timeout=10)
         if search_response.status_code == 200:
             results = search_response.json().get('results', [])
             if results:
-                print(f"✅ Fallback search succeeded, using first result")
-                return parse_metadata(results[0])  # pick first, or add logic for best match
+                print(f"✅ Fallback search for ID {gbif_id}")
+                return parse_metadata(results[0])
 
     except Exception as e:
-        print(f"⚠️ Failed to fetch metadata for GBIF ID {gbif_id}: {e}")
+        print(f"⚠️ Error fetching metadata for {gbif_id}: {e}")
 
     return empty_metadata()
 
 def parse_metadata(data):
-    # Extract classic fields
     meta = {
         "latitude": data.get("decimalLatitude"),
         "longitude": data.get("decimalLongitude"),
@@ -78,24 +83,28 @@ def parse_metadata(data):
         "recorded_by": data.get("recordedBy"),
         "identified_by": data.get("identifiedBy"),
     }
-    # Extract first image link if present (typical in extensions/media)
+
+    # Try to get media URL from extensions or media
     extensions = data.get("extensions") or {}
     multimedia = extensions.get("http://rs.gbif.org/terms/1.0/Multimedia")
     if multimedia and isinstance(multimedia, list):
         meta["media_url"] = multimedia[0].get("http://purl.org/dc/terms/identifier")
     else:
-        # fallback to 'media' array if available
         media = data.get("media")
         if media and isinstance(media, list) and "identifier" in media[0]:
             meta["media_url"] = media[0]["identifier"]
         else:
             meta["media_url"] = None
+
     return meta
 
-
 def empty_metadata():
-    return dict.fromkeys(["latitude", "longitude", "country", "event_date", "dataset_key", "basis_of_record"], None)
-
+    return dict.fromkeys([
+        "latitude", "longitude", "country", "event_date",
+        "dataset_key", "basis_of_record", "scientific_name",
+        "taxon_rank", "vernacular_name", "habitat",
+        "recorded_by", "identified_by", "media_url"
+    ], None)
 
 # === FIND IMAGES ===
 image_files = [f for f in os.listdir(INPUT_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
@@ -110,16 +119,14 @@ for i, fname in enumerate(image_files, 1):
         x = np.expand_dims(x, axis=0)
         x = preprocess_input(x)
 
-        # Extract deep features
         vec = feature_extractor.predict(x, verbose=0)[0]
         features.append(vec)
         filenames.append(fname)
 
-        # === Parse filename to extract GBIF ID ===
+        # Extract GBIF ID from filename
         parts = fname.rsplit("_", 2)
         gbif_id = parts[-2] if len(parts) >= 2 else None
 
-        # === Get metadata from GBIF API ===
         metadata = get_gbif_metadata(gbif_id)
 
         latitude_list.append(metadata["latitude"])
@@ -128,32 +135,46 @@ for i, fname in enumerate(image_files, 1):
         event_date_list.append(metadata["event_date"])
         dataset_key_list.append(metadata["dataset_key"])
         basis_of_record_list.append(metadata["basis_of_record"])
+        scientific_name_list.append(metadata["scientific_name"])
+        taxon_rank_list.append(metadata["taxon_rank"])
+        vernacular_name_list.append(metadata["vernacular_name"])
+        habitat_list.append(metadata["habitat"])
+        recorded_by_list.append(metadata["recorded_by"])
+        identified_by_list.append(metadata["identified_by"])
+        media_url_list.append(metadata["media_url"])
 
-        print(f"✅ Extracted features and metadata from: {fname} ({i}/{len(image_files)})")
+        print(f"✅ Processed: {fname} ({i}/{len(image_files)})")
 
     except Exception as e:
-        print(f"❌ Error processing {fname}: {str(e)}")
+        print(f"❌ Error processing {fname}: {e}")
 
 # === CREATE DATAFRAME ===
 if features:
     feature_dim = len(features[0])
-    column_names = ['filename'] + [f'effnet_feature_{i+1}' for i in range(feature_dim)]
+    columns = ['filename'] + [f'effnet_feature_{i+1}' for i in range(feature_dim)]
 
-    df = pd.DataFrame(columns=column_names)
+    df = pd.DataFrame(columns=columns)
     df['filename'] = filenames
     df.iloc[:, 1:1+feature_dim] = features
 
-    # Add metadata columns
+    # Add metadata
     df['latitude'] = latitude_list
     df['longitude'] = longitude_list
     df['country'] = country_list
     df['event_date'] = event_date_list
     df['dataset_key'] = dataset_key_list
     df['basis_of_record'] = basis_of_record_list
+    df['scientific_name'] = scientific_name_list
+    df['taxon_rank'] = taxon_rank_list
+    df['vernacular_name'] = vernacular_name_list
+    df['habitat'] = habitat_list
+    df['recorded_by'] = recorded_by_list
+    df['identified_by'] = identified_by_list
+    df['media_url'] = media_url_list
 
-    # === SAVE CSV ===
     OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUTPUT_CSV, index=False)
-    print(f"\n🟢 Features + metadata saved to CSV: {OUTPUT_CSV}")
+    print(f"\n🟢 Features + metadata saved: {OUTPUT_CSV}")
+
 else:
-    print("⚠️ No features extracted — check if input folder is empty or images failed.")
+    print("⚠️ No features extracted — check your input folder!")
