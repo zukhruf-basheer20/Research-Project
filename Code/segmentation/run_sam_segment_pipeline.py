@@ -7,9 +7,9 @@ from pathlib import Path
 # === CONFIG ===
 ROOT_DIR = Path(__file__).resolve().parent
 GSAM_DIR = ROOT_DIR / "Grounded-Segment-Anything"
-IMAGE_DIR = ROOT_DIR.parent / "data" / "leaf"
+IMAGE_DIR = ROOT_DIR.parent / "data" / "Filtered_EffiecientnNetB0_V6"
 TEMP_DIR = ROOT_DIR.parent / "data" / "leaf_SAM"
-OUTPUT_DIR = ROOT_DIR.parent / "data" / "segmented"
+OUTPUT_DIR = ROOT_DIR.parent / "data" / "segmented_with_sam_applied_to_Filtered_EffiecientnNetB0_V6"
 
 GSAM_SCRIPT = GSAM_DIR / "grounded_sam_demo.py"
 CONFIG = GSAM_DIR / "GroundingDINO" / "groundingdino" / "config" / "GroundingDINO_SwinT_OGC.py"
